@@ -1,8 +1,11 @@
+using IT4080C;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
 using Unity.Burst;
+using Unity.Mathematics;
+using Unity.Transforms;
 
 namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 {
@@ -25,7 +28,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         /// <param name="state">The state.</param>
         public void OnCreate(ref SystemState state)
         {
-            Debug.Log("Setting RpcSystem.DynamicAssemblyList to true");
+            //Debug.Log("Setting RpcSystem.DynamicAssemblyList to true");
             SystemAPI.GetSingletonRW<RpcCollection>().ValueRW.DynamicAssemblyList = true;
             state.Enabled = false;
         }
@@ -52,6 +55,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<CubeSpawner>();
+            // state.RequireForUpdate<BulletSpawner>();
             var builder = new EntityQueryBuilder(Allocator.Temp).WithAll<NetworkId>().WithNone<NetworkStreamInGame>();
             state.RequireForUpdate(state.GetEntityQuery(builder));
         }
@@ -63,6 +67,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            
+            
             var commandBuffer = new EntityCommandBuffer(Allocator.Temp);
             foreach (var (id, entity) in SystemAPI.Query<RefRO<NetworkId>>().WithEntityAccess()
                          .WithNone<NetworkStreamInGame>())
@@ -76,6 +82,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
             commandBuffer.Playback(state.EntityManager);
         }
+        
+        
     }
     
     /// <summary>
@@ -110,6 +118,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            var spawnPointsQuery = SystemAPI.QueryBuilder().WithAll<SpawnPoint, LocalToWorld>().Build();
+            var spawnPointsLtsWs = spawnPointsQuery.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
+            var spawnPT = GetSpawnPoint(spawnPointsLtsWs);
+            
             var prefab = SystemAPI.GetSingleton<CubeSpawner>().Cube;
             state.EntityManager.GetName(prefab, out var prefabName);
             var worldName = state.WorldUnmanaged.Name;
@@ -126,6 +138,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 UnityEngine.Debug.Log($"############ '{worldName}' setting connection '{networkId.Value}' to in game, spawning a Ghost '{prefabName}' for them!");
 
                 var player = commandBuffer.Instantiate(prefab);
+                commandBuffer.SetComponent(player, LocalTransform.FromPosition(spawnPT));
                 commandBuffer.SetComponent(player, new GhostOwner {NetworkId = networkId.Value});
 
                 // Add the player to the linked entity group so it is destroyed automatically on disconnect
@@ -135,6 +148,13 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             }
 
             commandBuffer.Playback(state.EntityManager);
+        }
+
+        private float3 GetSpawnPoint(NativeArray<LocalToWorld> spawnPointLtsWs)
+        {
+            int rngIndex = UnityEngine.Random.Range(0, spawnPointLtsWs.Length);
+            Debug.Log("SPAWNING AT POS: " + rngIndex);
+            return spawnPointLtsWs[rngIndex].Position;
         }
     }
 }

@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using IT4080C;
 #endif
 
-namespace Week2.Scripts
+namespace IT4080C
 {
     /// <summary>
     /// Input for the cube to move in the example setup.
@@ -27,6 +27,8 @@ namespace Week2.Scripts
         public int Vertical;
 
         public int Rotate;
+
+        public InputEvent shoot;
     }
 
     /// <summary>
@@ -66,6 +68,8 @@ namespace Week2.Scripts
             var up = Keyboard.current.wKey.isPressed;
             var rLeft = Keyboard.current.qKey.isPressed;
             var rRight = Keyboard.current.eKey.isPressed;
+
+            var shootKey = Input.GetKeyDown(KeyCode.Mouse0);
 #else
             var left = UnityEngine.Input.GetKey(KeyCode.A);
             var right = UnityEngine.Input.GetKey(KeyCode.D);
@@ -73,6 +77,8 @@ namespace Week2.Scripts
             var up = UnityEngine.Input.GetKey(KeyCode.W);
             var rLeft = UnityEngine.Input.GetKey(KeyCode.Q);
             var rRight = UnityEngine.Input.GetKey(KeyCode.E);
+            
+            var shootKey = UnityEngine.Input.GetKeyDown(KeyCode.Space);
 #endif
 
             foreach (var playerInput in SystemAPI.Query<RefRW<CubeInput>>().WithAll<GhostOwnerIsLocal>())
@@ -90,6 +96,15 @@ namespace Week2.Scripts
                     playerInput.ValueRW.Rotate -= 1;
                 if (rRight)
                     playerInput.ValueRW.Rotate += 1;
+
+                if (shootKey)
+                {
+                    playerInput.ValueRW.shoot.Set();
+                }
+                else
+                {
+                    playerInput.ValueRW.shoot = default;
+                }
             }
         }
     }
@@ -116,12 +131,19 @@ namespace Week2.Scripts
                      SystemAPI.Query<RefRO<CubeInput>, RefRW<LocalTransform>>()
                          .WithAll<Simulate>())
             {
-                var moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
-                moveInput = math.normalizesafe(moveInput) * speed;
-                trans.ValueRW.Position += new float3(moveInput.x, 0, moveInput.y);
+                //var moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
+                //moveInput = math.normalizesafe(moveInput) * speed;
+                //trans.ValueRW.Position += new float3(moveInput.x, 0, moveInput.y);
 
                 var rotateInput = input.ValueRO.Rotate * rSpeed;
                 trans.ValueRW.Rotation *= Quaternion.AngleAxis(rotateInput, Vector3.up);
+                
+                var forwardDir = math.mul(trans.ValueRW.Rotation, Vector3.forward);
+                var rightDir = math.mul(trans.ValueRW.Rotation, Vector3.right);
+
+                Vector3 moveVector = (input.ValueRO.Vertical * forwardDir * speed) +
+                                     (input.ValueRO.Horizontal * rightDir * speed);
+                trans.ValueRW.Position += new float3(moveVector);
             }
 
             foreach (var trans in 
