@@ -1,5 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
@@ -38,7 +39,11 @@ namespace IT4080C
                     {
                         Debug.LogWarning("Shoot Input");
                         Entity bulletEntity = ecb.Instantiate(prefab);
-                        ecb.SetComponent(bulletEntity, LocalTransform.FromPositionRotation(localTransform.ValueRO.Position, localTransform.ValueRO.Rotation));
+
+                        int bulletOffset = 3;
+                        var forwardDir = math.mul(localTransform.ValueRO.Rotation, Vector3.forward) * bulletOffset;
+                        
+                        ecb.SetComponent(bulletEntity, LocalTransform.FromPositionRotation(localTransform.ValueRO.Position + forwardDir, localTransform.ValueRO.Rotation));
                         ecb.SetComponent(bulletEntity, new GhostOwner { NetworkId = ghostOwner.ValueRO.NetworkId });
                     }
                 }
