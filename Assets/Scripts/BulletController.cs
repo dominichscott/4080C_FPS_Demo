@@ -42,6 +42,10 @@ namespace IT4080C
                     {
                         ecb.DestroyEntity(entity);
                     }
+                    else if (bullet.ValueRW.timer <= 4f)
+                    {
+                        bullet.ValueRW.hittable = true;
+                    }
                 }
             }
             ecb.Playback(state.EntityManager);

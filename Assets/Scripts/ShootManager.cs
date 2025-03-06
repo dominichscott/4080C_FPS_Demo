@@ -13,6 +13,7 @@ namespace IT4080C
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<BulletSpawner>();
+            state.RequireForUpdate<NetworkTime>();
         }
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
