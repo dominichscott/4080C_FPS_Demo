@@ -27,7 +27,8 @@ namespace IT4080C
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<HealthComponent>(entity, new HealthComponent
                 {
-                    CurrentHealth = 100f
+                    CurrentHealth = 100f,
+                    MaxHealth = 100f
                 });
             }
         }

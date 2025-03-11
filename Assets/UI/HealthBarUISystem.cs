@@ -34,7 +34,7 @@ partial class HealthBarUISystem : SystemBase
        
         if (uiObject == null)
         {
-            Debug.Log("No UIManager, searching");
+            //Debug.Log("No UIManager, searching");
             uiObject = GameObject.FindWithTag("UIManager");
            
         }
