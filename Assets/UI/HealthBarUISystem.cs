@@ -40,13 +40,13 @@ partial class HealthBarUISystem : SystemBase
         }
         else if(uiObject != null && uiDocument == null)
         {
-            Debug.Log("UIManager found, searching for UIdoc");
+            //Debug.Log("UIManager found, searching for UIdoc");
             uiDocument = uiObject.GetComponent<UIDocument>();
             
         }
         else if(uiObject != null && uiDocument != null && healthSlider == null )
         {
-            Debug.Log("Found UIDoc, searching for HealthSlider!");
+            //Debug.Log("Found UIDoc, searching for HealthSlider!");
             healthSlider = uiDocument.rootVisualElement.Q<ProgressBar>("HealthBar");
             
             return;
@@ -57,10 +57,16 @@ partial class HealthBarUISystem : SystemBase
         }
 
 
-        Entities.WithAll<GhostInstance>().ForEach((in HealthComponent health) =>
+        Entities.WithAll<GhostOwnerIsLocal>().ForEach((ref HealthComponent health, ref GhostOwner ghostOwner) =>
+            //.WithAll<GhostInstance>().ForEach((ref HealthComponent health, ref GhostOwner ghostOwner, ref GhostOwnerIsLocal gol) =>
         {
-           // Debug.Log("Ghost inst me: "+health.CurrentHealth);
-            healthSlider.value = health.CurrentHealth;
+
+            // Debug.Log("Ghost inst me: ");
+            if (health.ownerNetworkID == ghostOwner.NetworkId && !World.IsServer())
+            {
+                healthSlider.value = health.CurrentHealth;
+            }
+    
         }).WithoutBurst().Run();
     }
 }

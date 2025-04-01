@@ -140,6 +140,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 var player = commandBuffer.Instantiate(prefab);
                 commandBuffer.SetComponent(player, LocalTransform.FromPosition(spawnPT));
                 commandBuffer.SetComponent(player, new GhostOwner {NetworkId = networkId.Value});
+                commandBuffer.SetComponent(player, new HealthComponent{CurrentHealth = 100f, MaxHealth = 100f, ownerNetworkID = networkId.Value});
 
                 // Add the player to the linked entity group so it is destroyed automatically on disconnect
                 commandBuffer.AppendToBuffer(reqSrc.ValueRO.SourceConnection, new LinkedEntityGroup {Value = player});

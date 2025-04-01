@@ -12,6 +12,9 @@ namespace IT4080C
     {
         [GhostField] public float CurrentHealth;
         [GhostField] public float MaxHealth;
+        [GhostField] public float ownerNetworkID;
+        [GhostField] public int kills;
+        [GhostField] public int deaths;
     }
 
     /// <summary>
@@ -28,7 +31,10 @@ namespace IT4080C
                 AddComponent<HealthComponent>(entity, new HealthComponent
                 {
                     CurrentHealth = 100f,
-                    MaxHealth = 100f
+                    MaxHealth = 100f,
+                    ownerNetworkID = -1f,
+                    kills = 0,
+                    deaths = 0
                 });
             }
         }

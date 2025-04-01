@@ -23,6 +23,8 @@ partial struct CollisionHandler : ISystem
             PlayerHealthLookup = SystemAPI.GetComponentLookup<HealthComponent>(),
             BulletLookup = SystemAPI.GetComponentLookup<Bullet>(),
             HPBoxLookup = SystemAPI.GetComponentLookup<HPBox>(),
+            PowerBoxLookup = SystemAPI.GetComponentLookup<PowerBox>(),
+            PoweredUpComponentLookup = SystemAPI.GetComponentLookup<PoweredUpComponent>(),
         };
         state.Dependency = simulationJob.Schedule(
             SystemAPI.GetSingleton<SimulationSingleton>(), state.Dependency);
@@ -44,6 +46,8 @@ public partial struct CollisionSimulationJob : ICollisionEventsJob
     public ComponentLookup<HealthComponent> PlayerHealthLookup;
     public ComponentLookup<Bullet> BulletLookup;
     public ComponentLookup<HPBox> HPBoxLookup;
+    public ComponentLookup<PowerBox> PowerBoxLookup;
+    public ComponentLookup<PoweredUpComponent> PoweredUpComponentLookup;
 
     public void Execute(CollisionEvent collisionEvent)
     {
@@ -53,16 +57,17 @@ public partial struct CollisionSimulationJob : ICollisionEventsJob
             {
                 if (bullet.hasHit != 1 && bullet.hittable)
                 {
-
-                    health.CurrentHealth -= 1f;
+                    health.CurrentHealth -= 50f * bullet.damageMult;
                     PlayerHealthLookup[collisionEvent.EntityB] = health;
+                    Debug.Log("I am #: " + health.ownerNetworkID);
                     Debug.Log("Owww My health is: " + health.CurrentHealth);
+                    Debug.Log("I was hit by: " + bullet.ownerNetworkID);
+                    Debug.Log("DMG Mult: " + bullet.damageMult);
 
-
-                   
                     bullet.hasHit = 1;
                     bullet.timer = 0;
                     bullet.hittable = false;
+                    bullet.hitPlayerNetworkID = health.ownerNetworkID;
                     BulletLookup[collisionEvent.EntityA] = bullet;
                 }
             }
@@ -86,12 +91,33 @@ public partial struct CollisionSimulationJob : ICollisionEventsJob
                     {
                         Debug.Log("You dead");
                         //do death scene
+                        bullet.killed = true;
                     }
                     PlayerHealthLookup[collisionEvent.EntityB] = health;
                     //doo stuff to HPBox
                     hpBox.hasbeenPickedUp = 1;
                     hpBox.destroy = true;
+                    //add me
+                    HPBoxLookup[collisionEvent.EntityA] = hpBox; 
                 }
+            }
+            else if (PowerBoxLookup.TryGetComponent(collisionEvent.EntityA, out PowerBox powerBox) && PoweredUpComponentLookup.TryGetComponent(collisionEvent.EntityB, out PoweredUpComponent powerUp))
+            {
+                if (powerBox.hasbeenPickedUp != 1)
+                {
+                    Debug.LogWarning("Unlimited POWER!!");
+                    //add mult to player damage
+                    powerUp.poweredUpMultiplier = 5f;
+                    PoweredUpComponentLookup[collisionEvent.EntityB] = powerUp; 
+
+                    //destroy power cube on pickup
+                    powerBox.hasbeenPickedUp = 1;
+                    powerBox.destroy = true;
+                    //add me
+                    PowerBoxLookup[collisionEvent.EntityA] = powerBox;
+                    
+                }
+              
             }
 
         }

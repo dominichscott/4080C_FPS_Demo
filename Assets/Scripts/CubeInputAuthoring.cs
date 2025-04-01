@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -158,7 +159,38 @@ namespace IT4080C
                 }
                 
             }
-            
+            //check if dead and respawn
+            foreach ((RefRW<HealthComponent> playerHealth,
+                         RefRW<LocalTransform> playerPosition)
+                     in
+                     SystemAPI.Query<
+                             RefRW<HealthComponent>,
+                             RefRW<LocalTransform>>()
+                         .WithAll<HealthComponent>()
+                         .WithAll<Simulate>())
+            {
+
+                if (playerHealth.ValueRO.CurrentHealth <= 0)
+                {
+                    List<LocalTransform> localTrans = new List<LocalTransform>();
+                    foreach (var spawnTrans in
+                             SystemAPI.Query<RefRW<LocalTransform>>()
+                                 .WithAll<SpawnPoint>()
+                                 .WithAll<Simulate>())
+                    {
+                        Debug.Log("SPpoint found " + spawnTrans.ValueRW.Position.x);
+                        localTrans.Add(spawnTrans.ValueRW);
+                    }
+                    //adjust y offset
+                    LocalTransform tempTransform = localTrans[UnityEngine.Random.Range(0, localTrans.Count - 1)];
+                    tempTransform.Position.y = 1.43f;
+
+
+                    playerPosition.ValueRW.Position = tempTransform.Position;
+                    playerHealth.ValueRW.CurrentHealth = playerHealth.ValueRO.MaxHealth;
+                }
+
+            }
         }
     }
 }
