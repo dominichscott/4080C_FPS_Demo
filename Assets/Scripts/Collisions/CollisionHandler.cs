@@ -64,6 +64,12 @@ public partial struct CollisionSimulationJob : ICollisionEventsJob
                     Debug.Log("I was hit by: " + bullet.ownerNetworkID);
                     Debug.Log("DMG Mult: " + bullet.damageMult);
 
+                    if(health.CurrentHealth <= 0)
+                    {
+                        Debug.Log("You dead?");
+                        bullet.killed = true;
+                    }
+                    
                     bullet.hasHit = 1;
                     bullet.timer = 0;
                     bullet.hittable = false;
