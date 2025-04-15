@@ -4,7 +4,7 @@ using Unity.NetCode;
 using UnityEngine.UIElements;
 using UnityEngine;
 using System.Collections.Generic;
-using IT4080C;
+using Unity.Entities.UniversalDelegates;
 
 partial class ScoreBoardSystem : SystemBase
 {
@@ -13,19 +13,35 @@ partial class ScoreBoardSystem : SystemBase
     private MultiColumnListView scoreboard;
     private GameObject uiObject;
 
-
+    PlayerNameManager pNameManager;
 
     protected override void OnCreate()
     {
         ghostQuery = GetEntityQuery(typeof(GhostInstance), typeof(HealthComponent));
 
         // Find UIDocument in scene
-        uiObject = GameObject.FindWithTag("UIManager");
-        if (uiObject != null)
+        pNameManager = new PlayerNameManager();
+        base.OnCreate();
+    }
+
+    protected override void OnUpdate()
+    {
+        if (uiObject == null)
         {
-            Debug.Log("Found Score UIManager");
+            // Debug.LogWarning("No UIManager, searching");
+            uiObject = GameObject.FindWithTag("UIScoreManager");
+        }
+        if (uiObject != null && uiDocument == null)
+        {
+            // Debug.Log("UIManager found, searching for UIdoc");
             uiDocument = uiObject.GetComponent<UIDocument>();
+
+        }
+        if (uiObject != null && uiDocument != null && scoreboard == null)
+        {
+            // Debug.Log("Found UIDoc, searching for HealthSlider!");
             scoreboard = uiDocument.rootVisualElement.Q<MultiColumnListView>("ScoreboardMultiColListView");
+            scoreboard.columns.Clear();
             scoreboard.columns.Add(new Column()
             {
                 title = "PlayerName",
@@ -47,32 +63,7 @@ partial class ScoreBoardSystem : SystemBase
                 bindCell = BindKillsToCell,
                 stretchable = true,
             });
-        }
-        else
-        {
-            Debug.Log("No Score UIManager");
-        }
-        base.OnCreate();
-    }
-
-    protected override void OnUpdate()
-    {
-        if (uiObject == null)
-        {
-            // Debug.Log("No UIManager, searching");
-            uiObject = GameObject.FindWithTag("UIScoreManager");
-
-        }
-        else if (uiObject != null && uiDocument == null)
-        {
-            // Debug.Log("UIManager found, searching for UIdoc");
-            uiDocument = uiObject.GetComponent<UIDocument>();
-
-        }
-        else if (uiObject != null && uiDocument != null && scoreboard == null)
-        {
-            // Debug.Log("Found UIDoc, searching for HealthSlider!");
-            scoreboard = uiDocument.rootVisualElement.Q<MultiColumnListView>("ScoreboardMultiColListView");
+            scoreboard.Rebuild();
 
             return;
         }
@@ -86,11 +77,11 @@ partial class ScoreBoardSystem : SystemBase
         Entities.ForEach((ref HealthComponent healthComp) =>
         //.WithAll<GhostInstance>().ForEach((ref HealthComponent health, ref GhostOwner ghostOwner, ref GhostOwnerIsLocal gol) =>
         {
-
+            healthComp.playerName = pNameManager.GetPlayerName();
             cnt++;
-            PlayerScore tmp = new PlayerScore(""+healthComp.ownerNetworkID, (int)healthComp.kills, (int)healthComp.deaths);
+            PlayerScore tmp = new PlayerScore("" + healthComp.playerName, (int)healthComp.kills, (int)healthComp.deaths);
             scores.Add(tmp);
-            
+
 
         }).WithoutBurst().Run();
         if (scores.Count > 0)
